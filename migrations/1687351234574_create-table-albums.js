@@ -6,7 +6,7 @@ exports.up = (pgm) => {
       primaryKey: true,
     },
     year: {
-      type: "NUMERIC",
+      type: "INTEGER",
       notNull: true,
     },
     name: {
@@ -27,7 +27,7 @@ exports.up = (pgm) => {
       notNull: true,
     },
     year: {
-      type: "NUMERIC",
+      type: "INTEGER",
       notNull: true,
     },
     genre: {
@@ -39,10 +39,11 @@ exports.up = (pgm) => {
       notNull: true,
     },
     duration: {
-      type: "NUMERIC",
+      type: "INTEGER",
     },
-    albumId: {
+    album_id: {
       type: "VARCHAR(50)",
+      references: '"albums"',
     },
   });
 };
