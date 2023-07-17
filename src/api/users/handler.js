@@ -1,11 +1,15 @@
-class UserHandler {
+const autoBind = require("auto-bind");
+
+class UsersHandler {
   constructor(service, validator) {
     this._service = service;
     this._validator = validator;
+
+    autoBind(this);
   }
 
   async postUserHandler(request, h) {
-    this._validator = validateUserPayload(request.payload);
+    this._validator.validateUserPayload(request.payload);
 
     const { username, password, fullname } = request.payload;
 
@@ -22,7 +26,9 @@ class UserHandler {
         userId,
       },
     });
-    response.status(201);
+    response.code(201);
     return response;
   }
 }
+
+module.exports = UsersHandler;

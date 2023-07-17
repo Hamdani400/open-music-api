@@ -6,23 +6,28 @@ const Hapi = require("@hapi/hapi");
 const AlbumsServices = require("./services/postgres/AlbumsServices");
 const SongsServices = require("./services/postgres/SongsServices");
 const UsersServices = require("./services/postgres/UsersServices");
+const AuthServices = require("./services/postgres/AuthServices");
 
 // api
 const albums = require("./api/albums");
 const songs = require("./api/songs");
 const users = require("./api/users");
+const auth = require("./api/auth");
 
 // validators
 const AlbumsValidator = require("./validator/albums");
 const SongsValidator = require("./validator/songs");
 const UsersValidator = require("./validator/users");
+const AuthValidator = require("./validator/auth");
 
 const ClientError = require("./exceptions/ClientError");
+const TokenManager = require("./tokenize/TokenManager");
 
 const init = async () => {
   const albumsServices = new AlbumsServices();
   const songsServices = new SongsServices();
   const usersServices = new UsersServices();
+  const authServices = new AuthServices();
 
   const server = Hapi.server({
     port: process.env.PORT,
@@ -37,6 +42,7 @@ const init = async () => {
   server.ext("onPreResponse", (request, h) => {
     // mendapatkan konteks response dari request
     const { response } = request;
+    console.log(response);
     if (response instanceof Error) {
       // penanganan client error secara internal.
       if (response instanceof ClientError) {
@@ -64,6 +70,15 @@ const init = async () => {
   });
 
   await server.register([
+    {
+      plugin: auth,
+      options: {
+        authServices,
+        usersServices,
+        tokenManager: TokenManager,
+        validator: AuthValidator,
+      },
+    },
     {
       plugin: albums,
       options: {
