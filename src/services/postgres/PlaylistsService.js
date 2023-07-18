@@ -148,25 +148,30 @@ class PlaylistsServices {
 
     if (playlist.owner !== owner) {
       throw new AuthorizationError("Anda tidak berhak mengakses playlist ini");
+    } else {
+      return true;
     }
   }
 
   async verifyPlaylistAccess(playlistId, userId) {
+    let isOwner;
     try {
-      await this.verifyPlaylistOwner(playlistId, userId);
+      isOwner = await this.verifyPlaylistOwner(playlistId, userId);
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw error;
       }
     }
 
-    try {
-      await this._collaboratorService.verifyCollaborator({
-        userId,
-        playlistId,
-      });
-    } catch (error) {
-      throw error;
+    if (!isOwner) {
+      try {
+        await this._collaboratorService.verifyCollaborator({
+          userId,
+          playlistId,
+        });
+      } catch (error) {
+        throw error;
+      }
     }
   }
 }
