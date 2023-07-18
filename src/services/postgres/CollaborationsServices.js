@@ -22,7 +22,8 @@ class CollaborationsServices {
     return result.rows[0].id;
   }
 
-  async deleteCollaborator({ playlistId, userId }) {
+  async deleteCollaborator({ playlistId, userId, credentialId }) {
+    await this.verifyCollaborationOwner(playlistId, credentialId);
     await this.verifyCollaboratorData({
       playlistId,
       userId,
@@ -30,7 +31,7 @@ class CollaborationsServices {
     });
 
     const query = {
-      text: "DELETE FROM collaborations WHERE playlist_id = $1 AND user_id = $2",
+      text: "DELETE FROM collaborations WHERE playlist_id = $1 AND user_id = $2 RETURNING id",
       values: [playlistId, userId],
     };
 
@@ -80,7 +81,27 @@ class CollaborationsServices {
     const result = await this._pool.query(query);
 
     if (!result.rows.length) {
-      throw new InvariantError("Kolaborasi gagal diverifikasi");
+      throw new AuthorizationError("Kolaborasi gagal diverifikasi");
+    }
+  }
+
+  async verifyCollaborationOwner(id, owner) {
+    const query = {
+      text: "SELECT * FROM playlists WHERE id = $1",
+      values: [id],
+    };
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError("Playlist tidak ditemukan");
+    }
+
+    const playlist = result.rows[0];
+
+    if (playlist.owner !== owner) {
+      throw new AuthorizationError(
+        "Anda tidak berhak mengakses kolaborasi ini"
+      );
     }
   }
 }

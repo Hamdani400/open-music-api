@@ -7,14 +7,14 @@ const routes = (handler) => [
       auth: "openapimusic_jwt",
     },
   },
-  // {
-  //   method: "DELETE",
-  //   path: "/collaborations",
-  //   handler: handler.deleteCollaboratorHandler,
-  //   options: {
-  //     auth: "openapimusic_jwt",
-  //   },
-  // },
+  {
+    method: "DELETE",
+    path: "/collaborations",
+    handler: handler.deleteCollaboratorHandler,
+    options: {
+      auth: "openapimusic_jwt",
+    },
+  },
 ];
 
 module.exports = routes;
