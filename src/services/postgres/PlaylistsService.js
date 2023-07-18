@@ -56,7 +56,7 @@ class PlaylistsServices {
     }
   }
 
-  async addSongToPlaylist({ songId, playlistId }) {
+  async addSongToPlaylist({ songId, playlistId, userId }) {
     await this.verifyPlaylistAndSong(songId, playlistId);
     const id = `playlist_song-${nanoid(16)}`;
     const query = {
@@ -68,6 +68,8 @@ class PlaylistsServices {
 
     if (!result.rows.length) {
       throw new InvariantError("Gagal menambahkan lagu ke dalam playlist");
+    } else {
+      this.addActivityLog({ playlistId, songId, userId, action: "add" });
     }
   }
 
@@ -98,7 +100,7 @@ class PlaylistsServices {
     return finalResult;
   }
 
-  async deleteSongFromPlaylist({ songId, playlistId }) {
+  async deleteSongFromPlaylist({ songId, playlistId, userId }) {
     await this.verifyPlaylistAndSong(songId, playlistId);
 
     const query = {
@@ -107,6 +109,7 @@ class PlaylistsServices {
     };
 
     await this._pool.query(query);
+    this.addActivityLog({ playlistId, songId, userId, action: "delete" });
   }
 
   async verifyPlaylistAndSong(songId, playlistId) {
@@ -173,6 +176,38 @@ class PlaylistsServices {
         throw error;
       }
     }
+  }
+  async addActivityLog({ playlistId, songId, userId, action }) {
+    const time = new Date();
+    const formattedTime = time.toISOString();
+    const id = `activities-${nanoid(16)}`;
+
+    const query = {
+      text: "INSERT INTO activities VALUES($1, $2, $3, $4, $5, $6)",
+      values: [id, playlistId, songId, userId, action, formattedTime],
+    };
+
+    await this._pool.query(query);
+  }
+
+  async getPlaylistActivitiesById({ playlistId, owner }) {
+    await this.verifyPlaylistOwner(playlistId, owner);
+
+    const query = {
+      text: "SELECT users.username, songs.title, activities.action, activities.time FROM activities LEFT JOIN users ON users.id = activities.user_id LEFT JOIN songs ON songs.id = activities.song_id WHERE activities.playlist_id = $1",
+      values: [playlistId],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError("Playlist tidak ditemukan");
+    }
+
+    return {
+      playlistId,
+      activities: result.rows,
+    };
   }
 }
 
