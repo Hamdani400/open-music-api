@@ -10,6 +10,7 @@ const UsersServices = require("./services/postgres/UsersServices");
 const AuthServices = require("./services/postgres/AuthServices");
 const PlaylistsServices = require("./services/postgres/PlaylistsService");
 const CollaobrationsService = require("./services/postgres/CollaborationsServices");
+const ProducerService = require("./services/rabbitmq/ProducerService");
 
 // api
 const albums = require("./api/albums");
@@ -18,6 +19,7 @@ const users = require("./api/users");
 const auth = require("./api/auth");
 const playlists = require("./api/playlists");
 const collaborations = require("./api/collaborations");
+const _exports = require("./api/exports");
 
 // validators
 const AlbumsValidator = require("./validator/albums");
@@ -26,6 +28,7 @@ const UsersValidator = require("./validator/users");
 const AuthValidator = require("./validator/auth");
 const PlaylistsValidator = require("./validator/playlists");
 const CollaborationsValidator = require("./validator/collaborations");
+const ExportsValidator = require("./validator/exports");
 
 const ClientError = require("./exceptions/ClientError");
 const TokenManager = require("./tokenize/TokenManager");
@@ -51,7 +54,7 @@ const init = async () => {
   server.ext("onPreResponse", (request, h) => {
     // mendapatkan konteks response dari request
     const { response } = request;
-    console.log(response);
+    // console.log(response);
     if (response instanceof Error) {
       // penanganan client error secara internal.
       if (response instanceof ClientError) {
@@ -143,6 +146,13 @@ const init = async () => {
       options: {
         service: collaborationsServices,
         validator: CollaborationsValidator,
+      },
+    },
+    {
+      plugin: _exports,
+      options: {
+        service: ProducerService,
+        validator: ExportsValidator,
       },
     },
   ]);
