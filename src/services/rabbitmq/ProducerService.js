@@ -1,5 +1,4 @@
 const amqp = require("amqplib");
-const { Pool } = require("pg");
 const PlaylistsServices = require("../postgres/PlaylistsService");
 
 const playlistServices = new PlaylistsServices();
