@@ -1,29 +1,17 @@
 const amqp = require("amqplib");
 const { Pool } = require("pg");
-const NotFoundError = require("../../exceptions/NotFoundError");
-const AuthorizationError = require("../../exceptions/AuthorizationError");
+const PlaylistsServices = require("../postgres/PlaylistsService");
 
-const pool = new Pool();
+const playlistServices = new PlaylistsServices();
 
 const ProducerService = {
   sendMessage: async (queue, message) => {
     const parsedMessage = JSON.parse(message);
-    const query = {
-      text: "SELECT * FROM playlists WHERE id = $1",
-      values: [parsedMessage.playlistId],
-    };
-    let ownerCheck;
-    const checkResult = await pool.query(query);
-    if (!checkResult?.rows?.length) {
-      throw new NotFoundError("Playlist tidak ditemukan");
-    } else {
-      ownerCheck = checkResult?.rows?.every(
-        (i) => i.owner === parsedMessage.userId
-      );
-    }
-    if (!ownerCheck) {
-      throw new AuthorizationError("Anda tidak berhak mengekspor playlist ini");
-    }
+
+    await playlistServices.verifyPlaylistOwner(
+      parsedMessage.playlistId,
+      parsedMessage.userId
+    );
 
     const connection = await amqp.connect(process.env.RABBITMQ_SERVER);
     const channel = await connection.createChannel();
