@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const Hapi = require("@hapi/hapi");
 const Jwt = require("@hapi/jwt");
+const path = require("path");
 
 // services
 const AlbumsServices = require("./services/postgres/AlbumsServices");
@@ -11,6 +12,7 @@ const AuthServices = require("./services/postgres/AuthServices");
 const PlaylistsServices = require("./services/postgres/PlaylistsService");
 const CollaobrationsService = require("./services/postgres/CollaborationsServices");
 const ProducerService = require("./services/rabbitmq/ProducerService");
+const StorageService = require("./services/storage/StorageServices");
 
 // api
 const albums = require("./api/albums");
@@ -20,6 +22,7 @@ const auth = require("./api/auth");
 const playlists = require("./api/playlists");
 const collaborations = require("./api/collaborations");
 const _exports = require("./api/exports");
+const uploads = require("./api/uploads");
 
 // validators
 const AlbumsValidator = require("./validator/albums");
@@ -29,6 +32,7 @@ const AuthValidator = require("./validator/auth");
 const PlaylistsValidator = require("./validator/playlists");
 const CollaborationsValidator = require("./validator/collaborations");
 const ExportsValidator = require("./validator/exports");
+const UploadsValidator = require("./validator/uploads");
 
 const ClientError = require("./exceptions/ClientError");
 const TokenManager = require("./tokenize/TokenManager");
@@ -40,6 +44,9 @@ const init = async () => {
   const authServices = new AuthServices();
   const collaborationsServices = new CollaobrationsService();
   const playlistsServices = new PlaylistsServices(collaborationsServices);
+  const storageService = new StorageService(
+    path.resolve(__dirname, "api/uploads/file/images")
+  );
 
   const server = Hapi.server({
     port: process.env.PORT,
@@ -54,7 +61,7 @@ const init = async () => {
   server.ext("onPreResponse", (request, h) => {
     // mendapatkan konteks response dari request
     const { response } = request;
-    // console.log(response);
+    console.log(response);
     if (response instanceof Error) {
       // penanganan client error secara internal.
       if (response instanceof ClientError) {
@@ -153,6 +160,13 @@ const init = async () => {
       options: {
         service: ProducerService,
         validator: ExportsValidator,
+      },
+    },
+    {
+      plugin: uploads,
+      options: {
+        service: storageService,
+        validator: UploadsValidator,
       },
     },
   ]);

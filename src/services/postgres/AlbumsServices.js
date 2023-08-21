@@ -49,7 +49,13 @@ class AlbumsServices {
       };
     });
 
-    return { ...result.rows[0], year: +result.rows[0].year };
+    const finalResult = {
+      ...result.rows[0],
+      year: +result.rows[0].year,
+      coverUrl: result.rows[0].cover_url,
+    };
+    delete finalResult.cover_url;
+    return finalResult;
   }
 
   async editAlbumById(id, { year, name }) {
