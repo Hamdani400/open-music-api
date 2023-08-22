@@ -13,6 +13,7 @@ const PlaylistsServices = require("./services/postgres/PlaylistsService");
 const CollaobrationsService = require("./services/postgres/CollaborationsServices");
 const ProducerService = require("./services/rabbitmq/ProducerService");
 const StorageService = require("./services/storage/StorageServices");
+const LikesService = require("./services/postgres/LikesServices");
 
 // api
 const albums = require("./api/albums");
@@ -23,6 +24,7 @@ const playlists = require("./api/playlists");
 const collaborations = require("./api/collaborations");
 const _exports = require("./api/exports");
 const uploads = require("./api/uploads");
+const likes = require("./api/likes");
 
 // validators
 const AlbumsValidator = require("./validator/albums");
@@ -44,6 +46,7 @@ const init = async () => {
   const authServices = new AuthServices();
   const collaborationsServices = new CollaobrationsService();
   const playlistsServices = new PlaylistsServices(collaborationsServices);
+  const likesServices = new LikesService();
   const storageService = new StorageService(
     path.resolve(__dirname, "api/uploads/file/images")
   );
@@ -61,7 +64,7 @@ const init = async () => {
   server.ext("onPreResponse", (request, h) => {
     // mendapatkan konteks response dari request
     const { response } = request;
-    console.log(response);
+    // console.log(response);
     if (response instanceof Error) {
       // penanganan client error secara internal.
       if (response instanceof ClientError) {
@@ -167,6 +170,12 @@ const init = async () => {
       options: {
         service: storageService,
         validator: UploadsValidator,
+      },
+    },
+    {
+      plugin: likes,
+      options: {
+        service: likesServices,
       },
     },
   ]);
