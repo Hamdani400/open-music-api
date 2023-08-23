@@ -14,7 +14,7 @@ const CollaobrationsService = require("./services/postgres/CollaborationsService
 const ProducerService = require("./services/rabbitmq/ProducerService");
 const StorageService = require("./services/storage/StorageServices");
 const LikesService = require("./services/postgres/LikesServices");
-
+const CacheService = require("./services/redis/CacheService");
 // api
 const albums = require("./api/albums");
 const songs = require("./api/songs");
@@ -40,13 +40,14 @@ const ClientError = require("./exceptions/ClientError");
 const TokenManager = require("./tokenize/TokenManager");
 
 const init = async () => {
+  const cacheService = new CacheService();
   const albumsServices = new AlbumsServices();
   const songsServices = new SongsServices();
   const usersServices = new UsersServices();
   const authServices = new AuthServices();
   const collaborationsServices = new CollaobrationsService();
   const playlistsServices = new PlaylistsServices(collaborationsServices);
-  const likesServices = new LikesService();
+  const likesServices = new LikesService(cacheService);
   const storageService = new StorageService(
     path.resolve(__dirname, "api/uploads/file/images")
   );

@@ -4,8 +4,9 @@ const InvariantError = require("../../exceptions/InvariantError");
 const ClientError = require("../../exceptions/ClientError");
 
 class LikesServcies {
-  constructor() {
+  constructor(cacheService) {
     this._pool = new Pool();
+    this._cacheService = cacheService;
   }
 
   async addLike({ idAlbum, idUser }) {
@@ -22,9 +23,13 @@ class LikesServcies {
     if (!result.rows?.[0]?.id) {
       throw new InvariantError("Terjadi kesalahan, gagal menyukai album");
     }
+
+    this._cacheService.del(`like:${idAlbum}`);
   }
 
   async deleteLike({ idAlbum, idUser }) {
+    const id = `like-${idAlbum}-${idUser}`;
+
     const query = {
       text: `DELETE FROM likes WHERE id = $1 RETURNING id`,
       values: [`like-${idAlbum}-${idUser}`],
@@ -34,22 +39,32 @@ class LikesServcies {
     if (!result.rows?.length) {
       throw new NotFoundError("Gagal batal menyukai, album tidak ditemukan");
     }
+    this._cacheService.del(`like:${idAlbum}`);
   }
 
   async getLikesCount(id) {
-    const query = {
-      text: `SELECT * FROM likes WHERE album_id = $1`,
-      values: [id],
-    };
+    let isFromCache = false;
+    try {
+      const result = await this._cacheService.get(`like:${id}`);
+      isFromCache = true;
+      return { likes: JSON.parse(result), isFromCache };
+    } catch {
+      const query = {
+        text: `SELECT * FROM likes WHERE album_id = $1`,
+        values: [id],
+      };
 
-    const result = await this._pool.query(query);
+      const result = await this._pool.query(query);
 
-    if (!result.rows.length) {
-      throw new NotFoundError(
-        "Gagal mendapatkan jumlah likes, album tidak ditemukan"
-      );
+      if (!result.rows.length) {
+        throw new NotFoundError(
+          "Gagal mendapatkan jumlah likes, album tidak ditemukan"
+        );
+      }
+
+      this._cacheService.set(`like:${id}`, JSON.stringify(result.rows.length));
+      return { likes: result.rows.length, isFromCache };
     }
-    return result.rows.length;
   }
 
   async verifyLikeAlbum(idAlbum, idUser) {

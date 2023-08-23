@@ -34,15 +34,18 @@ class LikesHandler {
     return response;
   }
 
-  async getLikesHandler(request) {
+  async getLikesHandler(request, h) {
     const { id } = request.params;
 
-    const likes = await this._services.getLikesCount(id);
+    const { likes, isFromCache } = await this._services.getLikesCount(id);
 
-    return {
+    const response = h.response({
       status: "success",
       data: { likes },
-    };
+    });
+    if (isFromCache) response.header("X-Data-Source", "cache");
+
+    return response;
   }
 }
 
